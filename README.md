@@ -1,7 +1,7 @@
 # VScript Library (HLVR)
 [![ver][]](CHANGELOG.txt)
 
-[ver]: https://img.shields.io/badge/vs__library-v0.1.1-informational
+[ver]: https://img.shields.io/badge/vs__library-v0.1.2-informational
 
 The scope and structure of this library is tailored for Half-Life Alyx and its addon system.
 
@@ -109,6 +109,12 @@ Vector VS.SnapDirectionToAxis(Vector& direction, float epsilon)
 ```
 ```cpp
 bool VS.VectorsAreEqual(Vector a, Vector b, float tolerance = 0)
+```
+```cpp
+bool VS.IsPointInBox(Vector vec, Vector mins, Vector maxs)
+```
+```cpp
+bool VS.IsBoxIntersectingBox(Vector mins1, Vector maxs1, Vector mins2, Vector maxs2)
 ```
 ```lua
 table.unpack(list [, i [, j]])

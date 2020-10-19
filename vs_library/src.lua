@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------
 --------------------- Copyright (c) samisalreadytaken -------------------
---- v0.1.1 --------------------------------------------------------------
+--- v0.1.2 --------------------------------------------------------------
 
-local VER = "v0.1.1"
+local VER = "v0.1.2"
 
 if not _VS then
 	_VS = {}
@@ -207,15 +207,15 @@ local function Destroy()
 
 end
 
-if not _VS.__iEventSpawn and not Entities:GetLocalPlayer()then
+if not _VS.__eventspawn and not Entities:GetLocalPlayer()then
 
-	_VS.__iEventSpawn = ListenToGameEvent("player_connect_full", function()
+	_VS.__eventspawn = ListenToGameEvent("player_connect_full", function()
 
 		bPlayerSpawned = true
 
-		if _VS.__hSpawnInit then
-			_VS.__hSpawnInit:Kill()
-			_VS.__hSpawnInit = nil
+		if _VS.__thinkdummy then
+			_VS.__thinkdummy:Kill()
+			_VS.__thinkdummy = nil
 		end
 
 		FixLevelChange()
@@ -224,9 +224,9 @@ if not _VS.__iEventSpawn and not Entities:GetLocalPlayer()then
 
 			local nInitCount = 0
 
-			_VS.__hSpawnInit = Entities:CreateByClassname("soundent")
+			_VS.__thinkdummy = Entities:CreateByClassname("soundent")
 
-			_VS.__hSpawnInit:SetContextThink("",function()
+			_VS.__thinkdummy:SetContextThink("",function()
 
 				nInitCount = nInitCount+1
 
@@ -259,10 +259,10 @@ if not _VS.__iEventSpawn and not Entities:GetLocalPlayer()then
 
 					Destroy()
 					nInitCount = nil
-					_VS.__hSpawnInit:Kill()
-					_VS.__hSpawnInit = nil
-					StopListeningToGameEvent(_VS.__iEventSpawn)
-					_VS.__iEventSpawn = nil
+					_VS.__thinkdummy:Kill()
+					_VS.__thinkdummy = nil
+					StopListeningToGameEvent(_VS.__eventspawn)
+					_VS.__eventspawn = nil
 
 					return
 
@@ -272,13 +272,13 @@ if not _VS.__iEventSpawn and not Entities:GetLocalPlayer()then
 
 			end,1.0)
 
-			Msg("VS::PostPlayerSpawn: running ("..tostring(_VS.__hSpawnInit:entindex())..")\n")
+			Msg("VS::PostPlayerSpawn: running ("..tostring(_VS.__thinkdummy:entindex())..")\n")
 
 		else
 
 			Destroy()
-			StopListeningToGameEvent(_VS.__iEventSpawn)
-			_VS.__iEventSpawn = nil
+			StopListeningToGameEvent(_VS.__eventspawn)
+			_VS.__eventspawn = nil
 
 		end
 
@@ -509,6 +509,21 @@ function VS.VectorsAreEqual( a, b, tolerance )
 	return ( x <= tolerance and
 	         y <= tolerance and
 	         z <= tolerance )
+end
+
+function VS.IsPointInBox( vec, min, max )
+
+	return ( vec.x >= min.x and vec.x <= max.x and
+	         vec.y >= min.y and vec.y <= max.y and
+	         vec.z >= min.z and vec.z <= max.z )
+end
+
+function VS.IsBoxIntersectingBox( min1, max1, min2, max2 )
+
+	if     ( min1.x > max2.x ) or ( max1.x < min2.x ) then return false
+	elseif ( min1.y > max2.y ) or ( max1.y < min2.y ) then return false
+	elseif ( min1.z > max2.z ) or ( max1.z < min2.z ) then return false
+	else return true end
 end
 
 -------------------------------------------------------------------------
