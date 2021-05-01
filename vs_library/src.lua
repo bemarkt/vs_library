@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------
 --------------------- Copyright (c) samisalreadytaken -------------------
---- v0.1.2 --------------------------------------------------------------
+--- v0.1.3 --------------------------------------------------------------
 
-local VER = "v0.1.2"
+local VER = "v0.1.3"
 
 if not _VS then
 	_VS = {}
@@ -15,12 +15,12 @@ _VS[VER] = VS
 
 -------------------------------------------------------------------------
 
-VS.MAX_COORD_FLOAT = 16384.0
-VS.MAX_TRACE_LENGTH = 56755.84086241697115430736
-VS.DEG2RAD = 0.01745329251994329576
-VS.RAD2DEG = 57.29577951308232087679
-VS.PI = 3.14159265358979323846
-VS.RAND_MAX = 0x7FFF
+MAX_COORD_FLOAT = 16384.0
+MAX_TRACE_LENGTH = 56755.84086241697115430736
+DEG2RAD = 0.01745329251994329576
+RAD2DEG = 57.29577951308232087679
+PI = 3.14159265358979323846
+RAND_MAX = 0x7FFF
 
 local Msg,Warning = Msg,Warning
 local append,select,type,f,floor = table.insert,select,type,string.format,math.floor
@@ -38,7 +38,7 @@ local throw = function(msg)
 
 end
 
-if IsServer() then do ---------------------------------------------------
+if SERVER_DLL then do ---------------------------------------------------
 
 local tQueue = {}
 local nCompletedInQueue = 0
@@ -55,7 +55,7 @@ function VS.OnPlayerSpawn(...)
 
 	if bPlayerSpawned or ply and
 	   type(ply) == "table" and
-	   type(ply.__self) == "userdata" and
+	   IsValidEntity(ply) and
 	   not ply:IsNull() and
 	   ply:GetClassname() == "player" then
 		return Warning("VS::OnPlayerSpawn: player is already spawned\n")
@@ -63,16 +63,15 @@ function VS.OnPlayerSpawn(...)
 
 	local argv = pack(...)
 	local func = argv[1]
+	local info = debug.getinfo(func,"S")
 
 	if argv.n == 0 or type(func) ~= "function" then
-		return throw("VS::OnPlayerSpawn: invalid parameter 1\n")
+		return throw("VS::OnPlayerSpawn: invalid parameter 1 ["..info.short_src.."]\n")
 	end
-
-	local info = debug.getinfo(func,"S")
 
 	for i = 1, #tQueue do
 		if tQueue[tQueue[i]].source == info.source then
-			return throw("VS::OnPlayerSpawn: found event from this file in the queue, aborting\n")
+			return throw("VS::OnPlayerSpawn: found event from this file in the queue, aborting ["..info.short_src.."]\n")
 		end
 	end
 
@@ -108,7 +107,7 @@ function VS.OnPlayerSpawn(...)
 	append(tQueue,func)
 	tQueue[func] =
 	{
-		bSuccess = false,
+		success = false,
 		params = params,
 		err_cb = err_cb,
 		err_msg = err_msg,
@@ -117,7 +116,7 @@ function VS.OnPlayerSpawn(...)
 		line = info.linedefined
 	}
 
-	Msg(msg.."\n")
+	Msg(msg.." ["..info.short_src.."]\n")
 
 	return true
 
@@ -132,7 +131,7 @@ local function RunQueue()
 		local f = tQueue[i]
 		local t = tQueue[f]
 
-		if not t.bSuccess then
+		if not t.success then
 
 			local p,r = t.params
 
@@ -144,7 +143,7 @@ local function RunQueue()
 
 			if r or r == nil then
 
-				t.bSuccess = true
+				t.success = true
 				nCompletedInQueue = nCompletedInQueue+1
 
 			end
@@ -213,10 +212,11 @@ if not _VS.__eventspawn and not Entities:GetLocalPlayer()then
 
 		bPlayerSpawned = true
 
-		if _VS.__thinkdummy then
-			_VS.__thinkdummy:Kill()
-			_VS.__thinkdummy = nil
+		if _VS.__dummy then
+			_VS.__dummy:Kill()
+			_VS.__dummy = nil
 		end
+		_VS.__dummy = Entities:CreateByClassname("soundent")
 
 		FixLevelChange()
 
@@ -224,9 +224,7 @@ if not _VS.__eventspawn and not Entities:GetLocalPlayer()then
 
 			local nInitCount = 0
 
-			_VS.__thinkdummy = Entities:CreateByClassname("soundent")
-
-			_VS.__thinkdummy:SetContextThink("",function()
+			_VS.__dummy:SetContextThink("", function()
 
 				nInitCount = nInitCount+1
 
@@ -241,7 +239,7 @@ if not _VS.__eventspawn and not Entities:GetLocalPlayer()then
 
 							local t = tQueue[tQueue[i]]
 
-							if not t.bSuccess then
+							if not t.success then
 
 								if t.err_msg then
 									Warning(t.err_msg.."\n")
@@ -259,10 +257,14 @@ if not _VS.__eventspawn and not Entities:GetLocalPlayer()then
 
 					Destroy()
 					nInitCount = nil
-					_VS.__thinkdummy:Kill()
-					_VS.__thinkdummy = nil
-					StopListeningToGameEvent(_VS.__eventspawn)
-					_VS.__eventspawn = nil
+
+					-- delete next frame to preserve other event listeners
+					_VS.__dummy:SetContextThink( "R", function()
+						StopListeningToGameEvent(_VS.__eventspawn)
+						_VS.__eventspawn = nil
+						_VS.__dummy:Kill()
+						_VS.__dummy = nil
+					end, 0.0 )
 
 					return
 
@@ -270,15 +272,19 @@ if not _VS.__eventspawn and not Entities:GetLocalPlayer()then
 
 				return 1.0
 
-			end,1.0)
+			end, 1.0)
 
-			Msg("VS::PostPlayerSpawn: running ("..tostring(_VS.__thinkdummy:entindex())..")\n")
+			Msg("VS::PostPlayerSpawn: running ("..tostring(_VS.__dummy:entindex())..")\n")
 
 		else
 
 			Destroy()
-			StopListeningToGameEvent(_VS.__eventspawn)
-			_VS.__eventspawn = nil
+			_VS.__dummy:SetContextThink( "R", function()
+				StopListeningToGameEvent(_VS.__eventspawn)
+				_VS.__eventspawn = nil
+				_VS.__dummy:Kill()
+				_VS.__dummy = nil
+			end, 0.0 )
 
 		end
 
@@ -286,7 +292,7 @@ if not _VS.__eventspawn and not Entities:GetLocalPlayer()then
 
 end
 
-end end -- IsServer
+end end -- SERVER_DLL
 
 function VS.IsAddonEnabled(str)
 

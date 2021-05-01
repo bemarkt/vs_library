@@ -1,7 +1,7 @@
 # VScript Library (HLVR)
 [![ver][]](CHANGELOG.txt)
 
-[ver]: https://img.shields.io/badge/vs__library-v0.1.2-informational
+[ver]: https://img.shields.io/badge/vs__library-v0.1.3-informational
 
 The scope and structure of this library is tailored for Half-Life Alyx and its addon system.
 
@@ -30,12 +30,12 @@ local VS = require "vs_library-010"
 ### Constants
 
 ```
-VS.MAX_COORD_FLOAT
-VS.MAX_TRACE_LENGTH
-VS.DEG2RAD
-VS.RAD2DEG
-VS.PI
-VS.RAND_MAX
+MAX_COORD_FLOAT
+MAX_TRACE_LENGTH
+DEG2RAD
+RAD2DEG
+PI
+RAND_MAX
 ```
 
 ### Functions
